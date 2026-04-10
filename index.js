@@ -6,6 +6,7 @@ const express = require('express');
 const { Client, middleware, validateSignature } = require('@line/bot-sdk');
 const Anthropic = require('@anthropic-ai/sdk');
 const crypto = require('crypto');
+const https = require('https');
 
 // ─── 設定 ──────────────────────────────────────────────────────────────────
 
@@ -113,6 +114,10 @@ function createApp() {
     res.json({ status: 'ok', message: 'LINE AI Bot is running' });
   });
 
+  app.get('/health', (req, res) => {
+    res.json({ status: 'ok' });
+  });
+
   // LINE Webhookエンドポイント（署名検証あり）
   app.post(
     '/webhook',
@@ -142,11 +147,29 @@ function createApp() {
   return app;
 }
 
+// ─── 自己ping（Renderスリープ防止） ────────────────────────────────────────
+
+const SELF_PING_URL = 'https://line-ai-bot-ybi2.onrender.com/health';
+const PING_INTERVAL_MS = 5 * 60 * 1000; // 5分
+
+function startSelfPing() {
+  setInterval(() => {
+    https.get(SELF_PING_URL, (res) => {
+      console.log(`[PING] ${SELF_PING_URL} -> ${res.statusCode}`);
+    }).on('error', (err) => {
+      console.error(`[PING] エラー: ${err.message}`);
+    });
+  }, PING_INTERVAL_MS);
+  console.log(`[PING] 自己ping開始 (${PING_INTERVAL_MS / 60000}分間隔)`);
+}
+
 // ─── 起動 ──────────────────────────────────────────────────────────────────
 
 validateEnv();
 
 const app = createApp();
+startSelfPing();
+
 app.listen(PORT, () => {
   const delayMin = Math.round(REPLY_DELAY_MS / 60000);
   console.log(`
