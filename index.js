@@ -19,7 +19,7 @@ const lineConfig = {
 };
 
 const lineClient = new Client(lineConfig);
-const anthropic = new Anthropic({ apiKey: (process.env.ANTHROPIC_API_KEY || "").trim() });
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY.replace(/[\x00-\x1F\x7F-\x9F]/g, "").trim() });
 
 // ─── バリデーション ────────────────────────────────────────────────────────
 
